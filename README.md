@@ -1,5 +1,5 @@
 # LEDBoard_4x4_16bit_HWTest
-simple arduino sketch to test the LEDBoard_4x4_16bit PCBs during production
+simple arduino sketch to test the [LEDBoard_4x4_16bit](https://github.com/s-light/LEDBoard_4x4_16bit) PCBs during / after production
 
 connect one push button to D4 and GND.
 Single Click:
