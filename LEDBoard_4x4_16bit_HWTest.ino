@@ -164,6 +164,8 @@ const uint8_t tlc_channels_total = tlc_chips * tlc_channels;
 
 Tlc59711 tlc(tlc_chips);
 
+bool output_enabled = true;
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // sequencer
 
@@ -203,6 +205,18 @@ slight_ButtonInput button(
      500,  // const uint16_t cwDuration_ClickLong_New =   3000,
      500   // const uint16_t cwDuration_ClickDouble_New = 1000
 );
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// lowbat
+
+const uint8_t bat_voltage_pin = A0;
+const uint8_t lowbat_warning_pin = 3;
+
+uint16_t bat_voltage = 420;
+
+uint32_t lowbat_timestamp_last = millis();
+uint32_t lowbat_interval = 1000;
+
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // other things..
@@ -325,8 +339,10 @@ void handleMenu_Main(slight_DebugMenu *pInstance) {
             out.print(value);
             out.println();
 
-            tlc.setChannel(ch, value);
-            tlc.write();
+            if (output_enabled) {
+                tlc.setChannel(ch, value);
+                tlc.write();
+            }
         } break;
         // case 'f': {
         //     out.print(F("\t DemoFadeTo "));
@@ -434,27 +450,29 @@ void calculate_step() {
 }
 
 void map_to_allBoards(uint16_t values[]) {
-    // set all channels (mapping)
-    for (
-        size_t channel_index = 0;
-        channel_index < colorchannels_per_board;
-        channel_index++
-    ) {
-        // uint8_t mapped_channel = mapping_single_board[i];
-        // Serial.print("mapping: ");
-        // Serial.print(i);
-        // Serial.print("-->");
-        // Serial.print(mapped_channel);
-        // Serial.println();
-        for (size_t board_index = 0; board_index < boards_count; board_index++) {
-            tlc.setChannel(
-                channel_index + (tlc_channels_per_board * board_index),
-                values[channel_index]
-            );
+    if (output_enabled) {
+        // set all channels (mapping)
+        for (
+            size_t channel_index = 0;
+            channel_index < colorchannels_per_board;
+            channel_index++
+        ) {
+            // uint8_t mapped_channel = mapping_single_board[i];
+            // Serial.print("mapping: ");
+            // Serial.print(i);
+            // Serial.print("-->");
+            // Serial.print(mapped_channel);
+            // Serial.println();
+            for (size_t board_index = 0; board_index < boards_count; board_index++) {
+                tlc.setChannel(
+                    channel_index + (tlc_channels_per_board * board_index),
+                    values[channel_index]
+                );
+            }
         }
+        // write data to chips
+        tlc.write();
     }
-    // write data to chips
-    tlc.write();
 }
 
 
@@ -504,8 +522,10 @@ void myFaderRGB_callback_OutputChanged(uint8_t id, uint16_t *values, uint8_t cou
     //     tlc.setChannel(channel_index, values[channel_index]);
     // }
 
-    tlc.setRGB(values[0], values[1], values[2]);
-    tlc.write();
+    if (output_enabled) {
+        tlc.setRGB(values[0], values[1], values[2]);
+        tlc.write();
+    }
 
 }
 
@@ -521,12 +541,12 @@ void myFaderRGB_fadeTo(uint16_t duration, uint16_t r, uint16_t g, uint16_t b) {
 void myCallback_onEvent(slight_FaderLin *pInstance, byte event) {
 
 
-    Serial.print(F("Instance ID:"));
-    Serial.println((*pInstance).getID());
-
-    Serial.print(F("Event: "));
-    (*pInstance).printEvent(Serial, event);
-    Serial.println();
+    // Serial.print(F("Instance ID:"));
+    // Serial.println((*pInstance).getID());
+    //
+    // Serial.print(F("Event: "));
+    // (*pInstance).printEvent(Serial, event);
+    // Serial.println();
 
 
     // react on events:
@@ -626,6 +646,58 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
 
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// lowbat
+
+void lowbat_check() {
+    // handle lowbat
+    if(
+        (millis() - lowbat_timestamp_last) > lowbat_interval
+    ) {
+        lowbat_timestamp_last =  millis();
+        uint16_t bat_input_raw = analogRead(bat_voltage_pin);
+        uint16_t bat_voltage_raw = map(
+            bat_input_raw,
+            0, 1023,
+            0, 500
+        );
+        bat_voltage = bat_voltage_raw + 13;
+        // bat_voltage = map(
+        //     bat_voltage_raw,
+        //     0, 50,
+        //     2, 52
+        // );
+
+        // Serial.print(F("bat input raw: "));
+        // Serial.print(bat_input_raw);
+        // Serial.println();
+
+        // Serial.print(F("bat votlage raw: "));
+        // Serial.print(bat_voltage_raw);
+        // Serial.println();
+
+        // Serial.print(F("bat votlage: "));
+        // // Serial.print(bat_voltage);
+        // // Serial.print(F(" --> "));
+        // Serial.print(bat_voltage/100.0);
+        // Serial.println(F("V"));
+
+        if (bat_voltage > 340) {
+            output_enabled = true;
+            digitalWrite(lowbat_warning_pin, HIGH);
+            // Serial.println(F("--> output enabled"));
+        } else if (bat_voltage <= 310) {
+            // force off
+            output_enabled = false;
+            digitalWrite(lowbat_warning_pin, LOW);
+            tlc.setRGB(0, 0, 0);
+            tlc.write();
+            Serial.println(F("--> output disabled"));
+        }
+    }
+}
+
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // other things..
 
 
@@ -641,6 +713,9 @@ void setup() {
         //LiveSign
         pinMode(infoled_pin, OUTPUT);
         digitalWrite(infoled_pin, HIGH);
+
+        pinMode(lowbat_warning_pin, OUTPUT);
+        digitalWrite(lowbat_warning_pin, HIGH);
 
         // as of arduino 1.0.1 you can use INPUT_PULLUP
 
@@ -743,6 +818,7 @@ void loop() {
         myFaderRGB.update();
         button.update();
 
+        lowbat_check();
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // timed things
@@ -755,6 +831,7 @@ void loop() {
                 calculate_step();
             }
         }
+
 
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -770,7 +847,11 @@ void loop() {
                 Serial.print(millis());
                 Serial.print(F("ms;"));
                 Serial.print(F("  free RAM = "));
-                Serial.println(freeRam());
+                Serial.print(freeRam());
+                Serial.print(F("; bat votlage: "));
+                Serial.print(bat_voltage/100.0);
+                Serial.print(F("V"));
+                Serial.println();
             }
 
             if ( debugOut_LiveSign_LED_Enabled ) {
