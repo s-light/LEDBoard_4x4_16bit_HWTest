@@ -185,6 +185,7 @@ enum sequencer_modes {
     sequencer_HORIZONTAL,
     sequencer_SPIRAL,
     sequencer_SPIRAL2,
+    sequencer_HPLINE,
 };
 
 uint8_t sequencer_mode = sequencer_OFF;
@@ -285,6 +286,7 @@ void handleMenu_Main(slight_DebugMenu *pInstance) {
             out.println(F("\t 'A': Show 'HelloWorld' "));
             out.println(F("\t 'a': toggle sequencer"));
             out.println(F("\t 'b': toggle SPIRAL2"));
+            out.println(F("\t 'B': toggle HPLINE"));
             out.println(F("\t 's': set channel 's1:65535'"));
             // out.println(F("\t 'f': DemoFadeTo(ID, value) 'f1:65535'"));
             out.println();
@@ -353,6 +355,19 @@ void handleMenu_Main(slight_DebugMenu *pInstance) {
                 sequencer_mode = sequencer_SPIRAL2;
                 out.print(F("\t sequencer_mode: SPIRAL2\n"));
                 sequencer_interval = 1000;
+            }
+            else {
+                sequencer_mode = sequencer_OFF;
+                out.print(F("\t sequencer_mode: OFF\n"));
+            }
+        } break;
+        case 'B': {
+            out.println(F("\t toggle HPLINE:"));
+            if (sequencer_mode == sequencer_OFF) {
+                /* code */
+                sequencer_mode = sequencer_HPLINE;
+                out.print(F("\t sequencer_mode: HPLINE\n"));
+                sequencer_interval = 150;
             }
             else {
                 sequencer_mode = sequencer_OFF;
@@ -574,6 +589,51 @@ void calculate_step__spiral(uint16_t values[]) {
 
 }
 
+void calculate_step__hpline(uint16_t values[]) {
+    // Serial.println("calculate_step__spiral: ");
+
+    for (size_t column = 0; column < leds_per_column; column++) {
+
+        uint8_t pixel = channel_position_map[0][column];
+        uint8_t ch = pixel * 3;
+
+        // set pixel to low
+        values[ch + 0] = 0;
+        values[ch + 1] = 40000;
+        values[ch + 2] = 65535;
+
+        if (column == sequencer_current_step) {
+            // set pixel to high
+            values[ch + 0] = 0;
+            values[ch + 1] = 65535;
+            values[ch + 2] = 65535;
+        }
+
+    }
+
+    // prepare next step
+    // Serial.print("sequencer_current_step: ");
+    // Serial.println(sequencer_current_step);
+    // sequencer_current_step = sequencer_current_step + 1;
+    // if (sequencer_current_step >= leds_per_column) {
+    //     sequencer_current_step = 0;
+    // }
+    if (sequencer_current_step == 0) {
+        sequencer_current_step = leds_per_column-1;
+    }
+    else {
+        sequencer_current_step = sequencer_current_step - 1;
+    }
+
+    // reset step numbers to range..
+    if (sequencer_current_step >= leds_per_column) {
+        sequencer_current_step = leds_per_column-1;
+    }
+
+}
+
+
+
 void calculate_step__spiral2(uint16_t values[]) {
     // Serial.println("calculate_step__spiral: ");
 
@@ -582,6 +642,16 @@ void calculate_step__spiral2(uint16_t values[]) {
         {19, 20, 21, 22, 23, 24, 25,  8},
         {18, 31, 30, 29, 28, 27, 26,  9},
         {17, 16, 15, 14, 13, 12, 11, 10},
+    };
+
+    const uint8_t trail_count = 5;
+    const uint16_t trail[trail_count][colors_per_led] {
+        // red,   green,   blue
+        {     0,      0,      0},
+        {  2000,   5500,      0},
+        { 20000,  55000,      0},
+        {  2000,   5500,      0},
+        {     0,      0,      0}
     };
 
     for (size_t row = 0; row < leds_per_row; row++) {
@@ -629,6 +699,8 @@ void calculate_step__spiral2(uint16_t values[]) {
             values[ch + 1] = 0;
             values[ch + 2] = 0;
 
+            //  TODO implement trail
+            // trail
 
             if (spiral_order[row][column] == sequencer_current_step) {
                 // Serial.print(" ON");
@@ -676,6 +748,8 @@ void calculate_step__spiral2(uint16_t values[]) {
 
 }
 
+
+
 void calculate_step_singleboard() {
     // Serial.print("calculate_step: ");
 
@@ -697,6 +771,9 @@ void calculate_step_singleboard() {
         } break;
         case sequencer_SPIRAL: {
             calculate_step__spiral(values);
+        } break;
+        case sequencer_HPLINE: {
+            calculate_step__hpline(values);
         } break;
     }
 
@@ -742,7 +819,8 @@ void calculate_step() {
         } break;
         case sequencer_CHANNELCHECK:
         case sequencer_HORIZONTAL:
-        case sequencer_SPIRAL: {
+        case sequencer_SPIRAL:
+        case sequencer_HPLINE: {
             calculate_step_singleboard();
         } break;
         case sequencer_SPIRAL2: {
@@ -1004,9 +1082,18 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
         case slight_ButtonInput::event_ClickMulti : {
             Serial.print(F("click count: "));
             Serial.println((*pInstance).getClickCount());
-            sequencer_mode = sequencer_SPIRAL2;
-            sequencer_interval = 100;
-            Serial.print(F("\t sequencer_mode: SPIRAL 2boards\n"));
+            switch ((*pInstance).getClickCount()) {
+                case 4 : {
+                    sequencer_mode = sequencer_SPIRAL2;
+                    sequencer_interval = 50;
+                    Serial.print(F("\t sequencer_mode: SPIRAL 2boards\n"));
+                } break;
+                case 5 : {
+                    sequencer_mode = sequencer_HPLINE;
+                    sequencer_interval = 50;
+                    Serial.print(F("\t sequencer_mode: High Power Line\n"));
+                } break;
+            }
         } break;
     }  // end switch
 }
