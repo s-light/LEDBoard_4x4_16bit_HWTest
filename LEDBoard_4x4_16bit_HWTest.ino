@@ -369,7 +369,7 @@ void handleMenu_Main(slight_DebugMenu *pInstance) {
             if (sequencer_mode == sequencer_OFF) {
                 sequencer_mode = sequencer_SPIRAL2;
                 out.print(F("\t sequencer_mode: SPIRAL2\n"));
-                sequencer_interval = 1000;
+                sequencer_interval = 100;
             }
             else {
                 sequencer_mode = sequencer_OFF;
@@ -739,14 +739,15 @@ void calculate_step__spiral2(uint16_t values[]) {
     //     {17, 16, 15, 14, 13, 12, 11, 10},
     // };
 
-    const uint8_t trail_count = 5;
+    const uint8_t trail_count = 6;
     const uint16_t trail[trail_count][colors_per_led] {
-        // red,   green,   blue
-        {     0,      0,      0},
-        {   200,    500,      0},
-        {  2000,   5500,      0},
-        {  8000,  20000,      0},
-        { 20000,  55000,      0},
+        //  red, green,   blue
+        {    50,    20,      0},
+        {   500,   200,      0},
+        {  5500,  2000,      0},
+        { 10000,  8000,      0},
+        { 30000, 10000,      0},
+        { 55000, 20000,      0},
     };
 
     for (size_t row = 0; row < row_count; row++) {
@@ -800,30 +801,16 @@ void calculate_step__spiral2(uint16_t values[]) {
 
 
             uint8_t spiral_step = spiral_order[row][column];
-            if (spiral_step == sequencer_current_step) {
-                // Serial.print(" ON");
-                // set pixel to high
-                values[ch + 0] = 20000;
-                values[ch + 1] = 55000;
-                values[ch + 2] = 0;
-                // values[ch + 0] = 1000;
-                // values[ch + 1] = 4000;
-                // values[ch + 2] = 0;
-            }
-            else {
-                // set pixel to low
-                values[ch + 0] = 0;
-                values[ch + 1] = 0;
-                values[ch + 2] = 0;
-            }
 
-            //  TODO implement trail
-            // trail
-            // int8_t trail_step = spiral_step - sequencer_current_step;
-            // if ((trail_step >= 0) && (trail_step < trail_count)) {
-            //     values[ch + 0] = trail[trail_step][0];
-            //     values[ch + 1] = trail[trail_step][1];
-            //     values[ch + 2] = trail[trail_step][2];
+            // if (spiral_step == sequencer_current_step) {
+            //     // Serial.print(" ON");
+            //     // set pixel to high
+            //     values[ch + 0] = 20000;
+            //     values[ch + 1] = 55000;
+            //     values[ch + 2] = 0;
+            //     // values[ch + 0] = 1000;
+            //     // values[ch + 1] = 4000;
+            //     // values[ch + 2] = 0;
             // }
             // else {
             //     // set pixel to low
@@ -831,6 +818,27 @@ void calculate_step__spiral2(uint16_t values[]) {
             //     values[ch + 1] = 0;
             //     values[ch + 2] = 0;
             // }
+
+            //  TODO implement trail
+            // trail
+            int8_t trail_step = spiral_step - sequencer_current_step;
+
+            if (!sequencer_direction_forward) {
+                // change trail direction
+                trail_step = trail_count - trail_step;
+            }
+
+            if ((trail_step >= 0) && (trail_step < trail_count)) {
+                values[ch + 0] = trail[trail_step][0];
+                values[ch + 1] = trail[trail_step][1];
+                values[ch + 2] = trail[trail_step][2];
+            }
+            else {
+                // set pixel to low
+                values[ch + 0] = 0;
+                values[ch + 1] = 0;
+                values[ch + 2] = 0;
+            }
 
             // Serial.println();
 
