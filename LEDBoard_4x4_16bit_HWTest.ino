@@ -327,7 +327,8 @@ void handleMenu_Main(slight_DebugMenu *pInstance) {
             out.println(F("\t 'a': toggle sequencer"));
             out.println(F("\t 'a': toggle SPIRAL"));
             out.println(F("\t 'b': toggle SPIRAL2"));
-            out.println(F("\t 'B': toggle HPLINE"));
+            out.println(F("\t 'B': toggle SPIRALSUN"));
+            out.println(F("\t 'c': toggle HPLINE"));
             out.println(F("\t 'I': set sequencer interval 'i65535'"));
             out.println(F("\t 'v': set effect value_low 'v65535'"));
             out.println(F("\t 'V': set effect value_high 'V65535'"));
@@ -416,6 +417,18 @@ void handleMenu_Main(slight_DebugMenu *pInstance) {
             }
         } break;
         case 'B': {
+            out.println(F("\t toggle SPIRALSUN:"));
+            if (sequencer_mode == sequencer_OFF) {
+                sequencer_mode = sequencer_SPIRALSUN;
+                out.print(F("\t sequencer_mode: SPIRALSUN\n"));
+                sequencer_interval = 100;
+            }
+            else {
+                sequencer_mode = sequencer_OFF;
+                out.print(F("\t sequencer_mode: OFF\n"));
+            }
+        } break;
+        case 'c': {
             out.println(F("\t toggle HPLINE:"));
             if (sequencer_mode == sequencer_OFF) {
                 sequencer_mode = sequencer_HPLINE;
@@ -983,6 +996,8 @@ void calculate_step__sun_spiral_center() {
         {11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0},
     };
 
+    uint16_t ch_offset = colorchannels_per_board * boards_count_sun_arms * colors_per_led;
+
     for (size_t row = 0; row < row_count; row++) {
         for (size_t column = 0; column < column_count; column++) {
 
@@ -1038,15 +1053,15 @@ void calculate_step__sun_spiral_center() {
             }
 
             if ((trail_step >= 0) && (trail_step < trail_count)) {
-                tlc.setChannel(ch + 0, trail[trail_step][0]);
-                tlc.setChannel(ch + 1, trail[trail_step][1]);
-                tlc.setChannel(ch + 2, trail[trail_step][2]);
+                tlc.setChannel(ch_offset + ch + 0, trail[trail_step][0]);
+                tlc.setChannel(ch_offset + ch + 1, trail[trail_step][1]);
+                tlc.setChannel(ch_offset + ch + 2, trail[trail_step][2]);
             }
             else {
                 // set pixel to low
-                tlc.setChannel(ch + 0, 0);
-                tlc.setChannel(ch + 1, 0);
-                tlc.setChannel(ch + 2, 0);
+                tlc.setChannel(ch_offset + ch + 0, 0);
+                tlc.setChannel(ch_offset + ch + 1, 0);
+                tlc.setChannel(ch_offset + ch + 2, 0);
             }
 
             // Serial.println();
@@ -1120,15 +1135,12 @@ void calculate_step_mounting_sun() {
     // Serial.print("calculate_step: ");
 
     // first use spiral2 for arms
-    // init array with 0
-    // memset(values_global, 0, colorchannels_per_board*2);
-    // calculate_step__spiral2(values_global);
-    // now map values_global to tlc chips and write theme to output
-    // map_to_alldualBoards(values_global, boards_count_sun_arms);
+    calculate_step__spiral2();
+    // copy to all arms
+    map_to_alldualBoards(boards_count_sun_arms);
 
     // now create animaiton in center
-    // memset(values_global, 0, colorchannels_mounting_sun_center);
-    // calculate_step__sun_spiral_center(values_global);
+    calculate_step__sun_spiral_center();
 
 }
 
@@ -1149,10 +1161,15 @@ void calculate_step() {
         case sequencer_HORIZONTAL4: {
             calculate_step_dualboard();
         } break;
-        // case sequencer_SPIRALSUN: {
-        //     calculate_step_mounting_sun();
-        // } break;
+        case sequencer_SPIRALSUN: {
+            calculate_step_mounting_sun();
+        } break;
     }
+    if (sequencer_mode > sequencer_OFF) {
+        // write data to chips
+        tlc.write();
+    }
+
 }
 
 
@@ -1179,8 +1196,6 @@ void map_to_allBoards() {
                 );
             }
         }
-        // write data to chips
-        tlc.write();
     }
 }
 
@@ -1215,8 +1230,6 @@ void map_to_alldualBoards(uint8_t boards_count_local) {
                 );
             }
         }
-        // write data to chips
-        tlc.write();
     }
 }
 
