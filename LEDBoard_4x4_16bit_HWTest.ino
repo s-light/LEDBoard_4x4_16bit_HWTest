@@ -985,7 +985,7 @@ void calculate_step__horizontal4() {
 
 
 void calculate_step__sun_spiral_center() {
-    // Serial.println("calculate_step__spiral: ");
+    // Serial.println("calculate_step__sun_spiral_center: ");
 
     const uint8_t column_count = leds_per_row*3;
     const uint8_t row_count = leds_per_column*1;
@@ -996,7 +996,7 @@ void calculate_step__sun_spiral_center() {
         {11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0},
     };
 
-    uint16_t ch_offset = colorchannels_per_board * boards_count_sun_arms * colors_per_led;
+    uint16_t ch_offset = colorchannels_per_board * boards_count_sun_arms;
 
     for (size_t row = 0; row < row_count; row++) {
         for (size_t column = 0; column < column_count; column++) {
@@ -1010,7 +1010,7 @@ void calculate_step__sun_spiral_center() {
             // Serial.print(column);
 
             uint8_t pixel = 0;
-            uint8_t ch = 0;
+            uint16_t ch = 0;
 
             if ((column < leds_per_row) && (row < leds_per_column)) {
                 // first board
@@ -1034,12 +1034,22 @@ void calculate_step__sun_spiral_center() {
                 // Serial.print("; bc: ");
                 // Serial.print(board_column);
 
+                // calculate board offset count
+                uint8_t boards_offset_column = (column / leds_per_row);
+                uint8_t boards_offset_row = (row / leds_per_column);
+                uint8_t boards_offset = boards_offset_column + boards_offset_row;
+
                 pixel = channel_position_map[board_row][board_column];
                 ch = pixel * 3;
                 // Serial.print("; ch: ");
                 // Serial.print(ch);
 
-                ch = ch + colorchannels_per_board;
+                ch = ch + (colorchannels_per_board * boards_offset);
+                // Serial.print("; ch: ");
+                // Serial.print(ch);
+
+                // Serial.print("; ch_offset: ");
+                // Serial.print(ch_offset + );
             }
 
             uint8_t spiral_step = spiral_order[row][column];
@@ -1052,16 +1062,28 @@ void calculate_step__sun_spiral_center() {
                 trail_step = trail_count - trail_step;
             }
 
+            // Serial.print("; ch: ");
+            // Serial.print(ch);
+
+            // add offset for center panels
+            ch = ch_offset + ch;
+
+            // Serial.print("; ch_offset: ");
+            // Serial.print(ch_offset);
+            // Serial.print("; ch: ");
+            // Serial.print(ch);
+            // Serial.println();
+
             if ((trail_step >= 0) && (trail_step < trail_count)) {
-                tlc.setChannel(ch_offset + ch + 0, trail[trail_step][0]);
-                tlc.setChannel(ch_offset + ch + 1, trail[trail_step][1]);
-                tlc.setChannel(ch_offset + ch + 2, trail[trail_step][2]);
+                tlc.setChannel(ch + 0, trail[trail_step][0]);
+                tlc.setChannel(ch + 1, trail[trail_step][1]);
+                tlc.setChannel(ch + 2, trail[trail_step][2]);
             }
             else {
                 // set pixel to low
-                tlc.setChannel(ch_offset + ch + 0, 0);
-                tlc.setChannel(ch_offset + ch + 1, 0);
-                tlc.setChannel(ch_offset + ch + 2, 0);
+                tlc.setChannel(ch + 0, 0);
+                tlc.setChannel(ch + 1, 0);
+                tlc.setChannel(ch + 2, 0);
             }
 
             // Serial.println();
@@ -1459,6 +1481,11 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
                     sequencer_mode = sequencer_HPLINE;
                     sequencer_interval = 50;
                     Serial.print(F("\t sequencer_mode: High Power Line\n"));
+                } break;
+                case 6 : {
+                    sequencer_mode = sequencer_SPIRALSUN;
+                    sequencer_interval = 100;
+                    Serial.print(F("\t sequencer_mode: SPIRALSUN\n"));
                 } break;
             }
         } break;
