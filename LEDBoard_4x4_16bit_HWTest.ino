@@ -194,6 +194,10 @@ uint8_t sequencer_mode = sequencer_OFF;
 uint32_t sequencer_timestamp_last = millis();
 uint32_t sequencer_interval = 1000; // ms
 
+int16_t sequencer_current_step = 0;
+uint8_t sequencer_direction_forward = true;
+
+
 //
 uint16_t value_low = 1;
 uint16_t value_high = 1000;
@@ -496,9 +500,6 @@ void setup_Boards(Print &out) {
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Sequencer
 
-uint8_t sequencer_current_step = 0;
-uint8_t sequencer_direction_forward = true;
-
 void sequencer_off() {
     Serial.println("sequencer_off");
     uint16_t values[colorchannels_per_board];
@@ -739,14 +740,16 @@ void calculate_step__spiral2(uint16_t values[]) {
     //     {17, 16, 15, 14, 13, 12, 11, 10},
     // };
 
-    const uint8_t trail_count = 6;
+    const uint8_t trail_count = 8;
     const uint16_t trail[trail_count][colors_per_led] {
         //  red, green,   blue
+        {     5,     2,      0},
         {    50,    20,      0},
         {   500,   200,      0},
-        {  5500,  2000,      0},
-        { 10000,  8000,      0},
-        { 30000, 10000,      0},
+        {  1000,   360,      0},
+        {  3000,  1000,      0},
+        {  8000,  2900,      0},
+        { 20000,  7200,      0},
         { 55000, 20000,      0},
     };
 
@@ -848,9 +851,10 @@ void calculate_step__spiral2(uint16_t values[]) {
     // prepare next step
     // Serial.print("sequencer_current_step: ");
     // Serial.println(sequencer_current_step);
+    const uint8_t spiral_step_count = (leds_per_column*2 * leds_per_row)-1;
     if (sequencer_direction_forward) {
         // forward
-        if (sequencer_current_step >= (leds_per_column*2 * leds_per_row)-1 ) {
+        if (sequencer_current_step >= spiral_step_count ) {
             sequencer_current_step = sequencer_current_step - 1;
             sequencer_direction_forward = false;
             // Serial.println("direction switch to backwards");
@@ -861,7 +865,7 @@ void calculate_step__spiral2(uint16_t values[]) {
     }
     else {
         // backwards
-        if (sequencer_current_step == 0 ) {
+        if (sequencer_current_step <= (trail_count*-1) ) {
             sequencer_current_step = sequencer_current_step + 1;
             sequencer_direction_forward = true;
             // Serial.println("direction switch to forward");
@@ -1052,27 +1056,34 @@ void map_to_allBoards(uint16_t values[]) {
 void map_to_alldualBoards(uint16_t values[]) {
     if (output_enabled) {
         // set all channels (mapping)
-        for (
-            size_t channel_index = 0;
-            channel_index < colorchannels_per_board*2;
-            channel_index++
-        ) {
-            // uint8_t mapped_channel = mapping_single_board[i];
-            // Serial.print("mapping: ");
-            // Serial.print(i);
-            // Serial.print("-->");
-            // Serial.print(mapped_channel);
+        for (size_t board_index = 0; board_index < boards_count; board_index += 2) {
+            // Serial.print("bi: ");
+            // Serial.print(board_index);
             // Serial.println();
-            // for (size_t board_index = 0; board_index < (boards_count/2); board_index += 2) {
-            //     tlc.setChannel(
-            //         channel_index + (tlc_channels_per_board * board_index),
-            //         values[channel_index]
-            //     );
-            // }
-            tlc.setChannel(
-                channel_index,
-                values[channel_index]
-            );
+            // copy channels for both boards
+            for (
+                size_t channel_index = 0;
+                channel_index < colorchannels_per_board*2;
+                channel_index++
+            ) {
+                // uint8_t mapped_channel = mapping_single_board[i];
+                // Serial.print("mapping: ");
+                // Serial.print(i);
+                // Serial.print("-->");
+                // Serial.print(mapped_channel);
+                // Serial.println();
+
+                // first board
+                tlc.setChannel(
+                    channel_index + (tlc_channels_per_board * (board_index)),
+                    values[channel_index]
+                );
+                // // second board
+                // tlc.setChannel(
+                //     channel_index + (tlc_channels_per_board * (board_index + 1)),
+                //     values[channel_index]
+                // );
+            }
         }
         // write data to chips
         tlc.write();
@@ -1239,13 +1250,16 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
                 myFaderRGB_fadeTo(1000, 0, 10000, 0);
             }
             else if (duration <= 6000) {
-                myFaderRGB_fadeTo(1000, 0, 0, 10000);
-            }
-            else if (duration <= 8000) {
-                myFaderRGB_fadeTo(1000, 0, 65000, 65000);
+                myFaderRGB_fadeTo(2000, 0, 0, 10000);
             }
             else if (duration <= 10000) {
-                myFaderRGB_fadeTo(1000, 20000, 0, 65000);
+                myFaderRGB_fadeTo(2000, 0, 65000, 65000);
+            }
+            else if (duration <= 14000) {
+                myFaderRGB_fadeTo(2000, 30000, 0, 65000);
+            }
+            else if (duration <= 18000) {
+                myFaderRGB_fadeTo(1000, 65535, 65535, 65535);
             }
             else {
                 myFaderRGB_fadeTo(1000, 65535, 65535, 65535);
@@ -1254,7 +1268,7 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
         } break;
         case slight_ButtonInput::event_Up : {
             Serial.println(F("up"));
-            myFaderRGB_fadeTo(500, 0, 0, 1);
+            myFaderRGB_fadeTo(1000, 0, 0, 1);
         } break;
         case slight_ButtonInput::event_Click : {
             // Serial.println(F("FRL click"));
