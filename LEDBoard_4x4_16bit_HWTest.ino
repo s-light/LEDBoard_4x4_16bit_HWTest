@@ -1255,10 +1255,13 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
             else if (duration <= 10000) {
                 myFaderRGB_fadeTo(2000, 0, 65000, 65000);
             }
-            else if (duration <= 14000) {
-                myFaderRGB_fadeTo(2000, 30000, 0, 65000);
+            else if (duration <= 20000) {
+                myFaderRGB_fadeTo(2000, 65000, 0, 65000);
             }
-            else if (duration <= 18000) {
+            else if (duration <= 30000) {
+                myFaderRGB_fadeTo(2000, 65535, 65535, 0);
+            }
+            else if (duration <= 40000) {
                 myFaderRGB_fadeTo(1000, 65535, 65535, 65535);
             }
             else {
