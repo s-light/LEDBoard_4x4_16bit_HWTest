@@ -1410,24 +1410,24 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
             Serial.println(F("duration active: "));
             Serial.println(duration);
             if (duration <= 2000) {
-                myFaderRGB_fadeTo(1000, 10000, 0, 0);
+                myFaderRGB_fadeTo(500, 10000, 0, 0);
+            }
+            else if (duration <= 3000) {
+                myFaderRGB_fadeTo(500, 0, 10000, 0);
             }
             else if (duration <= 4000) {
-                myFaderRGB_fadeTo(1000, 0, 10000, 0);
+                myFaderRGB_fadeTo(500, 0, 0, 10000);
             }
             else if (duration <= 6000) {
-                myFaderRGB_fadeTo(2000, 0, 0, 10000);
+                myFaderRGB_fadeTo(500, 0, 65000, 65000);
             }
-            else if (duration <= 10000) {
-                myFaderRGB_fadeTo(2000, 0, 65000, 65000);
+            else if (duration <= 7000) {
+                myFaderRGB_fadeTo(500, 65000, 0, 65000);
             }
-            else if (duration <= 20000) {
-                myFaderRGB_fadeTo(2000, 65000, 0, 65000);
+            else if (duration <= 8000) {
+                myFaderRGB_fadeTo(500, 65535, 65535, 0);
             }
-            else if (duration <= 30000) {
-                myFaderRGB_fadeTo(2000, 65535, 65535, 0);
-            }
-            else if (duration <= 40000) {
+            else if (duration <= 9000) {
                 myFaderRGB_fadeTo(1000, 65535, 65535, 65535);
             }
             else {
