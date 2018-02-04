@@ -151,7 +151,7 @@ slight_DebugMenu myDebugMenu(Serial, Serial, 15);
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // LEDBoard
 
-const uint8_t boards_count = 12+3;
+const uint8_t boards_count = 1;
 
 const uint8_t chips_per_board = 4;
 
