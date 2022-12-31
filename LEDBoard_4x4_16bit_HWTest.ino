@@ -219,7 +219,7 @@ uint8_t sequencer_direction_forward = true;
 
 //
 uint16_t value_low = 1;
-uint16_t value_high = 1000;
+uint16_t value_high = 100;
 
 
 
@@ -253,17 +253,24 @@ slight_FaderLin myFaderRGB(
 
 const uint8_t button_pin = 4;
 
-slight_ButtonInput button(
-    0,  // byte cbID_New
-    button_pin,  // byte cbPin_New,
-    button_getInput,  // tCbfuncGetInput cbfuncGetInput_New,
-    button_onEvent,  // tcbfOnEvent cbfCallbackOnEvent_New,
-      30,  // const uint16_t cwDuration_Debounce_New = 30,
-     500,  // const uint16_t cwDuration_HoldingDown_New = 1000,
-      50,  // const uint16_t cwDuration_ClickSingle_New =   50,
-     500,  // const uint16_t cwDuration_ClickLong_New =   3000,
-     500   // const uint16_t cwDuration_ClickDouble_New = 1000
-);
+slight_ButtonInput mybutton = slight_ButtonInput(
+        // uint8_t id_new
+        0,
+        // uint8_t pin_new,
+        button_pin,
+        // tCallbackFunctionGetInput callbackGetInput_new,
+        button_getInput,
+        // tCallbackFunction callbackOnEvent_new,
+        button_onEvent,
+        // const uint16_t duration_debounce_new = 20,
+        10,
+        // const uint16_t duration_holddown_new = 1000,
+        1000,
+        // const uint16_t duration_click_long_new =   3000,
+        2000,
+        // const uint16_t duration_click_double_new = 250
+        250
+    );
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // lowbat
@@ -291,9 +298,10 @@ uint32_t lowbat_interval = 1000;
 // http://forum.arduino.cc/index.php?topic=183790.msg1362282#msg1362282
 // posted by mrburnette
 int freeRam () {
-    extern int __heap_start, *__brkval;
-    int v;
-    return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+    // extern int __heap_start, *__brkval;
+    // int v;
+    // return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+    return -42;
 }
 
 
@@ -302,9 +310,9 @@ int freeRam () {
 // Menu System
 
 // Main Menu
-void handleMenu_Main(slight_DebugMenu *pInstance) {
-    Print &out = pInstance->get_stream_out_ref();
-    char *command = pInstance->get_command_current_pointer();
+void handleMenu_Main(slight_DebugMenu *instance) {
+    Print &out = instance->get_stream_out_ref();
+    char *command = instance->get_command_current_pointer();
     // out.print("command: '");
     // out.print(command);
     // out.println("'");
@@ -517,8 +525,8 @@ void handleMenu_Main(slight_DebugMenu *pInstance) {
                 out.print(command);
                 out.println(F("' not recognized. try again."));
             }
-            pInstance->get_command_input_pointer()[0] = '?';
-            pInstance->set_flag_EOC(true);
+            instance->get_command_input_pointer()[0] = '?';
+            instance->set_flag_EOC(true);
         }
     } // end switch
 
@@ -1331,14 +1339,14 @@ void myFaderRGB_fadeTo(uint16_t duration, uint16_t r, uint16_t g, uint16_t b) {
     myFaderRGB.startFadeTo(duration, values);
 }
 
-void myCallback_onEvent(slight_FaderLin *pInstance, byte event) {
+void myCallback_onEvent(slight_FaderLin *instance, byte event) {
 
 
     // Serial.print(F("Instance ID:"));
-    // Serial.println((*pInstance).getID());
+    // Serial.println((*instance).getID());
     //
     // Serial.print(F("Event: "));
-    // (*pInstance).printEvent(Serial, event);
+    // (*instance).printEvent(Serial, event);
     // Serial.println();
 
 
@@ -1346,10 +1354,10 @@ void myCallback_onEvent(slight_FaderLin *pInstance, byte event) {
     switch (event) {
         case slight_FaderLin::event_StateChanged : {
             // Serial.print(F("slight_FaderLin "));
-            // Serial.print((*pInstance).getID());
+            // Serial.print((*instance).getID());
             // Serial.println(F(" : "));
             // Serial.print(F("\t state: "));
-            // (*pInstance).printState(Serial);
+            // (*instance).printState(Serial);
             // Serial.println();
 
             // switch (state) {
@@ -1377,36 +1385,36 @@ void myCallback_onEvent(slight_FaderLin *pInstance, byte event) {
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // button callbacks
 
-boolean button_getInput(uint8_t id, uint8_t pin) {
+boolean button_getInput(slight_ButtonInput *instance) {
     // read input invert reading - button closes to GND.
     // check HWB
     // return ! (PINE & B00000100);
-    return ! digitalRead(pin);
+    return !digitalRead((*instance).pin);
 }
 
-void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
+void button_onEvent(slight_ButtonInput *instance) {
     // Serial.print(F("FRL button:"));
-    // Serial.println((*pInstance).getID());
+    // Serial.println((*instance).getID());
     //
     // Serial.print(F("Event: "));
     // Serial.print(bEvent);
-    // // (*pInstance).printEvent(Serial, bEvent);
+    // // (*instance).printEvent(Serial, bEvent);
     // Serial.println();
 
-    // uint8_t button_id = (*pInstance).getID();
+    // uint8_t button_id = (*instance).getID();
 
     // show event additional infos:
-    switch (bEvent) {
+    switch ((*instance).getEventLast()) {
         // case slight_ButtonInput::event_StateChanged : {
         //     Serial.println(F("\t state: "));
-        //     (*pInstance).printlnState(Serial);
+        //     (*instance).printlnState(Serial);
         //     Serial.println();
         // } break;
-        case slight_ButtonInput::event_Down : {
+        case slight_ButtonInput::event_down : {
             // Serial.println(F("FRL down"));
         } break;
-        case slight_ButtonInput::event_HoldingDown : {
-            uint32_t duration = (*pInstance).getDurationActive();
+        case slight_ButtonInput::event_holddown : {
+            uint32_t duration = (*instance).getDurationActive();
             Serial.println(F("duration active: "));
             Serial.println(duration);
             if (duration <= 2000) {
@@ -1435,11 +1443,11 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
             }
 
         } break;
-        case slight_ButtonInput::event_Up : {
+        case slight_ButtonInput::event_up : {
             Serial.println(F("up"));
             myFaderRGB_fadeTo(1000, 0, 0, 1);
         } break;
-        case slight_ButtonInput::event_Click : {
+        case slight_ButtonInput::event_click : {
             // Serial.println(F("FRL click"));
             if (sequencer_mode == sequencer_OFF) {
                 sequencer_mode = sequencer_CHANNELCHECK;
@@ -1453,25 +1461,25 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
             }
 
         } break;
-        case slight_ButtonInput::event_ClickLong : {
+        case slight_ButtonInput::event_click_long : {
             // Serial.println(F("click long"));
         } break;
-        case slight_ButtonInput::event_ClickDouble : {
+        case slight_ButtonInput::event_click_double : {
             // Serial.println(F("click double"));
             sequencer_mode = sequencer_HORIZONTAL;
             sequencer_interval = 1000;
             Serial.print(F("\t sequencer_mode: HORIZONTAL\n"));
         } break;
-        case slight_ButtonInput::event_ClickTriple : {
+        case slight_ButtonInput::event_click_triple : {
             sequencer_mode = sequencer_SPIRAL;
             sequencer_interval = 100;
             Serial.print(F("\t sequencer_mode: SPIRAL\n"));
             // Serial.println(F("click triple"));
         } break;
-        case slight_ButtonInput::event_ClickMulti : {
+        case slight_ButtonInput::event_click_multi : {
             Serial.print(F("click count: "));
-            Serial.println((*pInstance).getClickCount());
-            switch ((*pInstance).getClickCount()) {
+            Serial.println((*instance).getClickCount());
+            switch ((*instance).getClickCount()) {
                 case 4 : {
                     sequencer_mode = sequencer_SPIRAL2;
                     sequencer_interval = 50;
@@ -1620,9 +1628,9 @@ void setup() {
 
     out.println(F("setup button:")); {
         out.println(F("\t set button pin"));
-        pinMode(button_pin, INPUT_PULLUP);
+        pinMode(mybutton.pin, INPUT_PULLUP);
         out.println(F("\t button begin"));
-        button.begin();
+        mybutton.begin();
     }
     out.println(F("\t finished."));
 
@@ -1664,7 +1672,7 @@ void loop() {
     // update sub parts
 
         myFaderRGB.update();
-        button.update();
+        mybutton.update();
 
         lowbat_check();
 

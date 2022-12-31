@@ -1,0 +1,8 @@
+{
+    "python.formatting.provider": "black",
+    "editor.foldingStrategy": "indentation",
+    "editor.defaultFoldingRangeProvider": null,
+    "editor.folding": true,
+    "editor.showFoldingControls": "always",
+    "editor.foldingHighlight": true
+}

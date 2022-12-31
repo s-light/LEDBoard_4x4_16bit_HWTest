@@ -1,0 +1,101 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    // https://code.visualstudio.com/docs/editor/tasks#_variable-substitution
+    // https://code.visualstudio.com/docs/editor/variables-reference
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "CircuitPython copy",
+            "type": "shell",
+            "command": "/home/stefan/mydata/github/CircuitPython/CircuitPython_Atom_helper/cp_copy.py",
+            "args": [
+                "--verbose",
+                "--verbose",
+                "--filename=${file}",
+                "--filename_project=${relativeFile}",
+                "--path_project=${workspaceFolder}",
+                "--action=COPY",
+                "--path_arduino=~/mydata/tools/arduino/arduino-1.8.19/",
+                "--path_uf2=~/mydata/tools/arduino/"
+            ],
+            "options": {},
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
+
+// "atom-shell-commands":
+//     commands: [
+//       {
+//         arguments: [
+//           "--verbose"
+//           "--filename={FileName}"
+//           "--filename_project={ProjectRel}"
+//           "--path_project={ProjectDir}"
+//           "--action=COPY_AS_MAIN"
+//           "--path_arduino=~/mydata/tools/arduino/arduino-1.8.19/"
+//           "--path_uf2=~/mydata/tools/arduino/"
+//         ]
+//         command: "/home/stefan/mydata/github/CircuitPython/CircuitPython_Atom_helper/cp_copy.py"
+//         name: "CircuitPython copy as main.py"
+//         options:
+//           cwd: "{ProjectDir}"
+//           keymap: "ctrl-shift-r"
+//           save: true
+//           silent: true
+//       }
+//       {
+//         arguments: [
+//           "--verbose"
+//           "--filename={FileName}"
+//           "--filename_project={ProjectRel}"
+//           "--path_project={ProjectDir}"
+//           "--action=COPY_AS_CODE"
+//         ]
+//         command: "/home/stefan/mydata/github/CircuitPython/CircuitPython_Atom_helper/cp_copy.py"
+//         name: "CircuitPython copy as code.py"
+//         options:
+//           cwd: "{ProjectDir}"
+//           save: true
+//           silent: true
+//       }
+//       {
+//         arguments: [
+//           "--verbose"
+//           "--filename={FileName}"
+//           "--filename_project={ProjectRel}"
+//           "--path_project={ProjectDir}"
+//           "--action=COPY"
+//           "--path_arduino=~/mydata/tools/arduino/arduino-1.8.19/"
+//           "--path_uf2=~/mydata/tools/arduino/"
+//         ]
+//         command: "/home/stefan/mydata/github/CircuitPython/CircuitPython_Atom_helper/cp_copy.py"
+//         name: "CircuitPython copy"
+//         options:
+//           cwd: "{ProjectDir}"
+//           keymap: "ctrl-shift-y"
+//           save: true
+//           silent: true
+//       }
+//       {
+//         arguments: [
+//           "--verbose"
+//           "--filename={FileName}"
+//           "--filename_project={ProjectRel}"
+//           "--path_project={ProjectDir}"
+//           "--action=COPY_AS_LIB"
+//         ]
+//         command: "/home/stefan/mydata/github/CircuitPython/CircuitPython_Atom_helper/cp_copy.py"
+//         name: "CircuitPython copy as lib"
+//         options:
+//           cwd: "{ProjectDir}"
+//           keymap: "ctrl-shift-alt-y"
+//           save: true
+//           silent: true
+//       }
+//     ]
